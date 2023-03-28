@@ -1,0 +1,166 @@
+REPORT zt9r_nested_reads_bapi.
+
+PARAMETERS p_count TYPE i DEFAULT 100.
+
+CLASS nested_reads DEFINITION.
+  PUBLIC SECTION.
+    TYPES: ty_origin TYPE c LENGTH 1.
+
+    CONSTANTS c_origin_fields_equal      TYPE ty_origin VALUE 'E'.
+    CONSTANTS c_origin_default_component TYPE ty_origin VALUE 'D'.
+    CONSTANTS c_origin_rollname_equal    TYPE ty_origin VALUE 'R'.
+    CONSTANTS c_origin_no_match          TYPE ty_origin VALUE '-'.
+
+    TYPES: BEGIN OF ts_field,
+             bapi   TYPE fieldname,
+             int    TYPE fieldname,
+             origin TYPE ty_origin,
+           END OF ts_field,
+           tt_fields TYPE STANDARD TABLE OF ts_field WITH DEFAULT KEY.
+
+    METHODS constructor.
+
+    METHODS test_data.
+    METHODS a1 RETURNING VALUE(fields) TYPE tt_fields.
+    METHODS a5 RETURNING VALUE(fields) TYPE tt_fields.
+
+  PRIVATE SECTION.
+
+    DATA field TYPE ts_field.
+
+    CLASS-DATA components_int  TYPE STANDARD TABLE OF dd03p.
+    CLASS-DATA components_bapi TYPE STANDARD TABLE OF dd03p.
+
+    METHODS test_data_int.
+    METHODS test_data_bapi.
+
+ENDCLASS.
+
+CLASS nested_reads IMPLEMENTATION.
+  METHOD constructor.
+    test_data( ).
+  ENDMETHOD.
+
+  METHOD test_data.
+    test_data_int( ).
+    test_data_bapi( ).
+  ENDMETHOD.
+
+  METHOD test_data_int.
+
+    components_int = VALUE #(
+      ( fieldname = 'NAME1'            rollname = 'CHAR30'              deffdname = '' )
+      ( fieldname = 'NAME2'            rollname = 'AD_NAME2'            deffdname = '' )
+      ( fieldname = 'NAME3'            rollname = 'AD_NAME'             deffdname = 'NAME_TXT' )
+      ( fieldname = 'NAME4'            rollname = 'AD_NAME_CHK'         deffdname = 'NAME4' )
+    ).
+
+  ENDMETHOD.
+
+  METHOD test_data_bapi.
+
+    components_bapi = VALUE #(
+
+      ( fieldname = 'NAME1'            rollname = 'AD_NAME'            deffdname = '' )
+      ( fieldname = 'NAME_ZWEI'        rollname = 'AD_NAME2'           deffdname = '' )
+      ( fieldname = 'NAME_TXT'         rollname = 'AD_NAME_TXT'        deffdname = '' )
+      ( fieldname = 'NAME_FOUR'        rollname = 'AD_NAME_XY'         deffdname = '' )
+    ).
+
+  ENDMETHOD.
+
+  METHOD a1.
+
+    LOOP AT components_int INTO DATA(component_int).
+      CLEAR field.
+      field-int = component_int-fieldname.
+
+      TRY.
+          field-bapi = components_bapi[ fieldname = component_int-fieldname ]-fieldname.
+          field-origin = c_origin_fields_equal.
+        CATCH cx_sy_itab_line_not_found.
+          TRY.
+              field-bapi = components_bapi[ fieldname = component_int-deffdname ]-fieldname.
+              field-origin = c_origin_default_component.
+            CATCH cx_sy_itab_line_not_found.
+              TRY.
+                  field-bapi = components_bapi[ rollname = component_int-rollname ]-fieldname.
+                  field-origin = c_origin_rollname_equal.
+                CATCH cx_sy_itab_line_not_found.
+                  field-origin = c_origin_no_match.
+              ENDTRY.
+          ENDTRY.
+      ENDTRY.
+      APPEND field TO fields.
+
+    ENDLOOP.
+  ENDMETHOD.
+
+  METHOD a5.
+
+    LOOP AT components_int INTO DATA(component_int).
+      CLEAR field.
+      TRY.
+*          field-bapi = VALUE #( components_bapi[ fieldname = component_int-fieldname ]-fieldname
+*               DEFAULT VALUE #( components_bapi[ fieldname = component_int-deffdname ]-fieldname
+*               DEFAULT VALUE #( components_bapi[ rollname = component_int-rollname ]-fieldname ) ) ).
+
+          field = VALUE #( bapi = VALUE #( components_bapi[ fieldname = component_int-fieldname ]-fieldname
+                            DEFAULT VALUE ts_field( bapi = VALUE #( components_bapi[ fieldname = component_int-deffdname ]-fieldname
+                              DEFAULT VALUE ts_field( bapi = VALUE #( components_bapi[ rollname = component_int-rollname ]-fieldname
+                                DEFAULT VALUE ts_field( bapi = space origin = c_origin_no_match ) )
+                                origin = c_origin_rollname_equal )
+                             ) origin = c_origin_default_component )
+                            ) origin = c_origin_fields_equal ) .
+          field-int = component_int-fieldname.
+          APPEND field TO fields.
+        CATCH cx_sy_itab_line_not_found.
+          CONTINUE.
+      ENDTRY.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS tests DEFINITION FOR TESTING DURATION SHORT RISK LEVEL HARMLESS.
+  PRIVATE SECTION.
+    DATA cut TYPE REF TO nested_reads.
+    DATA expected_results TYPE nested_reads=>tt_fields.
+
+    METHODS setup.
+    METHODS a1 FOR TESTING.
+    METHODS a5 FOR TESTING.
+ENDCLASS.
+
+CLASS tests IMPLEMENTATION.
+  METHOD setup.
+    cut = NEW #( ).
+    expected_results = VALUE #(
+      ( int = 'NAME1'     bapi = 'NAME1'      origin = nested_reads=>c_origin_fields_equal )
+      ( int = 'NAME2'     bapi = 'NAME_ZWEI'  origin = nested_reads=>c_origin_rollname_equal )
+      ( int = 'NAME3'     bapi = 'NAME_TXT'   origin = nested_reads=>c_origin_default_component )
+      ( int = 'NAME4'     bapi = ''           origin = nested_reads=>c_origin_no_match )
+    ).
+  ENDMETHOD.
+
+  METHOD a1.
+    DATA(current_results) = cut->a1( ).
+    cl_aunit_assert=>assert_equals(
+        exp                  = expected_results
+        act                  = current_results ).
+  ENDMETHOD.
+
+
+  METHOD a5.
+    DATA(current_results) = cut->a5( ).
+    cl_aunit_assert=>assert_equals(
+        exp                  = expected_results
+        act                  = current_results ).
+  ENDMETHOD.
+
+
+ENDCLASS.
+
+START-OF-SELECTION.
