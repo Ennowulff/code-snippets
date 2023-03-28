@@ -109,9 +109,9 @@ CLASS nested_reads IMPLEMENTATION.
                             bapi = VALUE #( components_bapi[ fieldname = component_int-fieldname ]-fieldname
                             DEFAULT VALUE ts_field( bapi = VALUE #( components_bapi[ fieldname = component_int-deffdname ]-fieldname
                               DEFAULT VALUE ts_field( bapi = VALUE #( components_bapi[ rollname = component_int-rollname ]-fieldname
-                                DEFAULT VALUE ts_field( bapi = space origin = c_origin_no_match ) )
-                                origin = c_origin_rollname_equal )
-                             ) origin = c_origin_default_component )
+                                DEFAULT VALUE ts_field( bapi = space origin = c_origin_no_match ) 
+                                ) origin = c_origin_rollname_equal )
+                              ) origin = c_origin_default_component )
                             ) origin = c_origin_fields_equal ) .
           APPEND field TO fields.
         CATCH cx_sy_itab_line_not_found.
