@@ -1,0 +1,712 @@
+REPORT zt9r_nested_reads_bapi_versions.
+
+PARAMETERS p_count TYPE i DEFAULT 100.
+
+CLASS nested_reads DEFINITION.
+  PUBLIC SECTION.
+    TYPES: ty_origin TYPE c LENGTH 1.
+    CONSTANTS c_origin_fields_equal      VALUE 'E'.
+    CONSTANTS c_origin_default_component VALUE 'D'.
+    CONSTANTS c_origin_rollname_equal    VALUE 'R'.
+    CONSTANTS c_origin_no_match          VALUE '-'.
+
+    TYPES: BEGIN OF ts_field,
+             bapi   TYPE fieldname,
+             int    TYPE fieldname,
+             origin TYPE ty_origin,
+           END OF ts_field,
+           tt_fields TYPE STANDARD TABLE OF ts_field WITH DEFAULT KEY.
+
+    METHODS constructor.
+    METHODS run IMPORTING i_count TYPE i.
+
+    METHODS test_data.
+    METHODS a1 RETURNING VALUE(fields) TYPE tt_fields.
+    METHODS a1s RETURNING VALUE(fields) TYPE tt_fields.
+    METHODS a2 RETURNING VALUE(fields) TYPE tt_fields.
+    METHODS a2s RETURNING VALUE(fields) TYPE tt_fields.
+    METHODS a3 RETURNING VALUE(fields) TYPE tt_fields.
+    METHODS a3s RETURNING VALUE(fields) TYPE tt_fields.
+    METHODS a4 RETURNING VALUE(fields) TYPE tt_fields.
+    METHODS a4s RETURNING VALUE(fields) TYPE tt_fields.
+    METHODS a5 RETURNING VALUE(fields) TYPE tt_fields.
+    METHODS a5s RETURNING VALUE(fields) TYPE tt_fields.
+
+  PRIVATE SECTION.
+
+
+    DATA field TYPE ts_field.
+
+    CLASS-DATA components_int  TYPE STANDARD TABLE OF dd03p.
+    CLASS-DATA components_bapi_sorted TYPE SORTED TABLE OF dd03p WITH UNIQUE KEY fieldname position.
+    CLASS-DATA components_bapi TYPE STANDARD TABLE OF dd03p.
+
+
+    METHODS test_data_int.
+    METHODS test_data_bapi.
+
+ENDCLASS.
+
+CLASS nested_reads IMPLEMENTATION.
+  METHOD constructor.
+    test_data( ).
+  ENDMETHOD.
+
+  METHOD test_data.
+    test_data_int( ).
+    test_data_bapi( ).
+  ENDMETHOD.
+
+  METHOD test_data_int.
+
+    components_int = VALUE #(
+      ( fieldname = 'CLIENT'           rollname = 'MANDT'                       deffdname = '' )
+      ( fieldname = 'ADDRNUMBER'       rollname = 'AD_ADDRNUM'                  deffdname = 'ADDR_NO' )
+      ( fieldname = 'DATE_FROM'        rollname = 'AD_DATE_FR'                  deffdname = 'FROM_DATE' )
+      ( fieldname = 'NATION'           rollname = 'AD_NATION'                   deffdname = 'ADDR_VERS' )
+      ( fieldname = 'DATE_TO'          rollname = 'AD_DATE_TO'                  deffdname = 'TO_DATE' )
+      ( fieldname = 'TITLE'            rollname = 'AD_TITLE'                    deffdname = 'TITLE_KEY' )
+      ( fieldname = 'NAME1'            rollname = 'AD_NAME1'                    deffdname = 'NAME' )
+      ( fieldname = 'NAME2'            rollname = 'AD_NAME2'                    deffdname = 'NAME_2' )
+      ( fieldname = 'NAME3'            rollname = 'AD_NAME3'                    deffdname = 'NAME_3' )
+      ( fieldname = 'NAME4'            rollname = 'AD_NAME4'                    deffdname = 'NAME_4' )
+      ( fieldname = 'NAME_TEXT'        rollname = 'AD_NAMETXT'                  deffdname = 'CONV_NAME' )
+      ( fieldname = 'NAME_CO'          rollname = 'AD_NAME_CO'                  deffdname = 'C_O_NAME' )
+      ( fieldname = 'CITY1'            rollname = 'AD_CITY1'                    deffdname = 'CITY' )
+      ( fieldname = 'CITY2'            rollname = 'AD_CITY2'                    deffdname = 'DISTRICT' )
+      ( fieldname = 'CITY_CODE'        rollname = 'AD_CITYNUM'                  deffdname = 'CITY_NO' )
+      ( fieldname = 'CITYP_CODE'       rollname = 'AD_CITYPNM'                  deffdname = 'DISTRCT_NO' )
+      ( fieldname = 'HOME_CITY'        rollname = 'AD_CITY3'                    deffdname = 'HOME_CITY' )
+      ( fieldname = 'CITYH_CODE'       rollname = 'AD_CITYHNM'                  deffdname = 'HOMECITYNO' )
+      ( fieldname = 'CHCKSTATUS'       rollname = 'AD_CHECKST'                  deffdname = 'CHCKSTATUS' )
+      ( fieldname = 'REGIOGROUP'       rollname = 'REGIOGROUP'                  deffdname = 'REGIOGROUP' )
+      ( fieldname = 'POST_CODE1'       rollname = 'AD_PSTCD1'                   deffdname = 'POSTL_COD1' )
+      ( fieldname = 'POST_CODE2'       rollname = 'AD_PSTCD2'                   deffdname = 'POSTL_COD2' )
+      ( fieldname = 'POST_CODE3'       rollname = 'AD_PSTCD3'                   deffdname = 'POSTL_COD3' )
+      ( fieldname = 'PCODE1_EXT'       rollname = 'AD_PST1XT'                   deffdname = 'PCODE1_EXT' )
+      ( fieldname = 'PCODE2_EXT'       rollname = 'AD_PST2XT'                   deffdname = 'PCODE2_EXT' )
+      ( fieldname = 'PCODE3_EXT'       rollname = 'AD_PST3XT'                   deffdname = 'PCODE3_EXT' )
+      ( fieldname = 'PO_BOX'           rollname = 'AD_POBX'                     deffdname = 'PO_BOX' )
+      ( fieldname = 'DONT_USE_P'       rollname = 'AD_NO_USEP'                  deffdname = 'DONT_USE_P' )
+      ( fieldname = 'PO_BOX_NUM'       rollname = 'AD_POBXNUM'                  deffdname = 'PO_W_O_NO' )
+      ( fieldname = 'PO_BOX_LOC'       rollname = 'AD_POBXLOC'                  deffdname = 'PO_BOX_CIT' )
+      ( fieldname = 'CITY_CODE2'       rollname = 'AD_CIT2NUM'                  deffdname = 'PBOXCIT_NO' )
+      ( fieldname = 'PO_BOX_REG'       rollname = 'AD_POBXREG'                  deffdname = 'PO_BOX_REG' )
+      ( fieldname = 'PO_BOX_CTY'       rollname = 'AD_POBXCTY'                  deffdname = 'POBOX_CTRY' )
+      ( fieldname = 'POSTALAREA'       rollname = 'AD_PSTLAR'                   deffdname = 'DELIV_DIS' )
+      ( fieldname = 'TRANSPZONE'       rollname = 'LZONE'                       deffdname = 'TRANSPZONE' )
+      ( fieldname = 'STREET'           rollname = 'AD_STREET'                   deffdname = 'STREET' )
+      ( fieldname = 'DONT_USE_S'       rollname = 'AD_NO_USES'                  deffdname = 'DONT_USE_S' )
+      ( fieldname = 'STREETCODE'       rollname = 'AD_STRNUM'                   deffdname = 'STREET_NO' )
+      ( fieldname = 'STREETABBR'       rollname = 'AD_STRABBR'                  deffdname = 'STR_ABBR' )
+      ( fieldname = 'HOUSE_NUM1'       rollname = 'AD_HSNM1'                    deffdname = 'HOUSE_NO' )
+      ( fieldname = 'HOUSE_NUM2'       rollname = 'AD_HSNM2'                    deffdname = 'HOUSE_NO2' )
+      ( fieldname = 'HOUSE_NUM3'       rollname = 'AD_HSNM3'                    deffdname = 'HOUSE_NO3' )
+      ( fieldname = 'STR_SUPPL1'       rollname = 'AD_STRSPP1'                  deffdname = 'STR_SUPPL1' )
+      ( fieldname = 'STR_SUPPL2'       rollname = 'AD_STRSPP2'                  deffdname = 'STR_SUPPL2' )
+      ( fieldname = 'STR_SUPPL3'       rollname = 'AD_STRSPP3'                  deffdname = 'STR_SUPPL3' )
+      ( fieldname = 'LOCATION'         rollname = 'AD_LCTN'                     deffdname = 'LOCATION' )
+      ( fieldname = 'BUILDING'         rollname = 'AD_BLDNG'                    deffdname = 'BUILDING' )
+      ( fieldname = 'FLOOR'            rollname = 'AD_FLOOR'                    deffdname = 'FLOOR' )
+      ( fieldname = 'ROOMNUMBER'       rollname = 'AD_ROOMNUM'                  deffdname = 'ROOM_NO' )
+      ( fieldname = 'COUNTRY'          rollname = 'LAND1'                       deffdname = 'COUNTRY' )
+      ( fieldname = 'LANGU'            rollname = 'SPRAS'                       deffdname = 'LANGU' )
+      ( fieldname = 'REGION'           rollname = 'REGIO'                       deffdname = 'REGION' )
+      ( fieldname = 'ADDR_GROUP'       rollname = 'AD_GROUP'                    deffdname = 'ADDR_GROUP' )
+      ( fieldname = 'FLAGGROUPS'       rollname = 'AD_FLGGP'                    deffdname = '' )
+      ( fieldname = 'PERS_ADDR'        rollname = 'AD_PRSADDR'                  deffdname = '' )
+      ( fieldname = 'SORT1'            rollname = 'AD_SORT'                     deffdname = 'SORT1' )
+      ( fieldname = 'SORT2'            rollname = 'AD_SORT'                     deffdname = 'SORT2' )
+      ( fieldname = 'SORT_PHN'         rollname = 'AD_SRTPHN'                   deffdname = 'SORT_PHN' )
+      ( fieldname = 'DEFLT_COMM'       rollname = 'AD_COMM'                     deffdname = 'COMM_TYPE' )
+      ( fieldname = 'TEL_NUMBER'       rollname = 'AD_TLNMBR1'                  deffdname = 'TEL1_NUMBR' )
+      ( fieldname = 'TEL_EXTENS'       rollname = 'AD_TLXTNS1'                  deffdname = 'TEL1_EXT' )
+      ( fieldname = 'FAX_NUMBER'       rollname = 'AD_FXNMBR1'                  deffdname = 'FAX_NUMBER' )
+      ( fieldname = 'FAX_EXTENS'       rollname = 'AD_FXXTNS1'                  deffdname = 'FAX_EXTENS' )
+      ( fieldname = 'FLAGCOMM2'        rollname = 'AD_FLGCM02'                  deffdname = '' )
+      ( fieldname = 'FLAGCOMM3'        rollname = 'AD_FLGCM03'                  deffdname = '' )
+      ( fieldname = 'FLAGCOMM4'        rollname = 'AD_FLGCM04'                  deffdname = '' )
+      ( fieldname = 'FLAGCOMM5'        rollname = 'AD_FLGCM05'                  deffdname = '' )
+      ( fieldname = 'FLAGCOMM6'        rollname = 'AD_FLGCM06'                  deffdname = '' )
+      ( fieldname = 'FLAGCOMM7'        rollname = 'AD_FLGCM07'                  deffdname = '' )
+      ( fieldname = 'FLAGCOMM8'        rollname = 'AD_FLGCM08'                  deffdname = '' )
+      ( fieldname = 'FLAGCOMM9'        rollname = 'AD_FLGCM09'                  deffdname = '' )
+      ( fieldname = 'FLAGCOMM10'       rollname = 'AD_FLGCM10'                  deffdname = '' )
+      ( fieldname = 'FLAGCOMM11'       rollname = 'AD_FLGCM11'                  deffdname = '' )
+      ( fieldname = 'FLAGCOMM12'       rollname = 'AD_FLGCM12'                  deffdname = '' )
+      ( fieldname = 'FLAGCOMM13'       rollname = 'AD_FLGCM13'                  deffdname = '' )
+      ( fieldname = 'ADDRORIGIN'       rollname = 'AD_ORIGINA'                  deffdname = 'ADDRORIGIN' )
+      ( fieldname = 'MC_NAME1'         rollname = 'AD_MC_NAME'                  deffdname = '' )
+      ( fieldname = 'MC_CITY1'         rollname = 'AD_MC_CITY'                  deffdname = '' )
+      ( fieldname = 'MC_STREET'        rollname = 'AD_MC_STRT'                  deffdname = '' )
+      ( fieldname = 'EXTENSION1'       rollname = 'AD_EXTENS1'                  deffdname = 'EXTENS_1' )
+      ( fieldname = 'EXTENSION2'       rollname = 'AD_EXTENS2'                  deffdname = 'EXTENS_2' )
+      ( fieldname = 'TIME_ZONE'        rollname = 'AD_TZONE'                    deffdname = 'TIME_ZONE' )
+      ( fieldname = 'TAXJURCODE'       rollname = 'AD_TXJCD'                    deffdname = 'TAXJURCODE' )
+      ( fieldname = 'ADDRESS_ID'       rollname = 'AD_ADDR_ID'                  deffdname = 'ADDRESS_ID' )
+      ( fieldname = 'LANGU_CREA'       rollname = 'AD_LANGUCR'                  deffdname = 'LANGU_CR' )
+      ( fieldname = 'ADRC_UUID'        rollname = 'AD_UUID'                     deffdname = '' )
+      ( fieldname = 'UUID_BELATED'     rollname = 'AD_UUID_BELATED'             deffdname = '' )
+      ( fieldname = 'ID_CATEGORY'      rollname = 'AD_ID_CATEGORY'              deffdname = '' )
+      ( fieldname = 'ADRC_ERR_STATUS'  rollname = 'AD_ERR_STATUS'               deffdname = '' )
+      ( fieldname = 'PO_BOX_LOBBY'     rollname = 'AD_PO_BOX_LBY'               deffdname = 'AD_PO_BOX_LBY' )
+      ( fieldname = 'DELI_SERV_TYPE'   rollname = 'AD_DELIVERY_SERVICE_TYPE'    deffdname = '' )
+      ( fieldname = 'DELI_SERV_NUMBER' rollname = 'AD_DELIVERY_SERVICE_NUMBER'  deffdname = '' )
+      ( fieldname = 'COUNTY_CODE'      rollname = 'AD_CNTYNUM'                  deffdname = '' )
+      ( fieldname = 'COUNTY'           rollname = 'AD_COUNTY'                   deffdname = '' )
+      ( fieldname = 'TOWNSHIP_CODE'    rollname = 'AD_TWSHPNUM'                 deffdname = '' )
+      ( fieldname = 'TOWNSHIP'         rollname = 'AD_TOWNSHIP'                 deffdname = '' )
+      ( fieldname = 'MC_COUNTY'        rollname = 'AD_MC_COUNTY'                deffdname = '' )
+      ( fieldname = 'MC_TOWNSHIP'      rollname = 'AD_MC_TWSHP'                 deffdname = '' )
+      ( fieldname = 'XPCPT'            rollname = 'AD_XPCPT'                    deffdname = 'BUSINESS PURPOSE COMPLETE FLAG' )
+    ).
+
+  ENDMETHOD.
+
+  METHOD test_data_bapi.
+
+    components_bapi = VALUE #(
+
+      ( fieldname = 'ADDRNUMBER'       rollname = 'AD_ADDRNUM'                 deffdname = 'ADDR_NO' )
+      ( fieldname = 'ADDRHANDLE'       rollname = 'AD_HANDLE'                  deffdname = 'ADDRHANDLE' )
+      ( fieldname = 'NATION'           rollname = 'AD_NATION'                  deffdname = 'ADDR_VERS' )
+      ( fieldname = 'DATE'             rollname = 'AD_DATE'                    deffdname = 'DATE' )
+      ( fieldname = 'DATE_FROM'        rollname = 'AD_DATE_FR'                 deffdname = 'FROM_DATE' )
+      ( fieldname = 'DATE_TO'          rollname = 'AD_DATE_TO'                 deffdname = 'TO_DATE' )
+      ( fieldname = 'TITLE'            rollname = 'AD_TITLE'                   deffdname = 'TITLE_KEY' )
+      ( fieldname = 'NAME'             rollname = 'AD_NAME1'                   deffdname = 'NAME' )
+      ( fieldname = 'NAME2'            rollname = 'AD_NAME2'                   deffdname = 'NAME_2' )
+      ( fieldname = 'NAME3'            rollname = 'AD_NAME3'                   deffdname = 'NAME_3' )
+      ( fieldname = 'NAME4'            rollname = 'AD_NAME4'                   deffdname = 'NAME_4' )
+      ( fieldname = 'NAME_TXT'         rollname = 'AD_NAMETXT'                 deffdname = 'CONV_NAME' )
+      ( fieldname = 'NAME_CO'          rollname = 'AD_NAME_CO'                 deffdname = 'C_O_NAME' )
+      ( fieldname = 'CITY1'            rollname = 'AD_CITY1'                   deffdname = 'CITY' )
+      ( fieldname = 'CITY2'            rollname = 'AD_CITY2'                   deffdname = 'DISTRICT' )
+      ( fieldname = 'CITY_CODE'        rollname = 'AD_CITYNUM'                 deffdname = 'CITY_NO' )
+      ( fieldname = 'CITYP_CODE'       rollname = 'AD_CITYPNM'                 deffdname = 'DISTRCT_NO' )
+      ( fieldname = 'HOME_CITY'        rollname = 'AD_CITY3'                   deffdname = 'HOME_CITY' )
+      ( fieldname = 'CITYH_CODE'       rollname = 'AD_CITYHNM'                 deffdname = 'HOMECITYNO' )
+      ( fieldname = 'CHCKSTATUS'       rollname = 'AD_CHECKST'                 deffdname = 'CHCKSTATUS' )
+      ( fieldname = 'REGIOGROUP'       rollname = 'REGIOGROUP'                 deffdname = 'REGIOGROUP' )
+      ( fieldname = 'POST_CODE1'       rollname = 'AD_PSTCD1'                  deffdname = 'POSTL_COD1' )
+      ( fieldname = 'POST_CODE2'       rollname = 'AD_PSTCD2'                  deffdname = 'POSTL_COD2' )
+      ( fieldname = 'POST_CODE3'       rollname = 'AD_PSTCD3'                  deffdname = 'POSTL_COD3' )
+      ( fieldname = 'PCODE1_EXT'       rollname = 'AD_PST1XT'                  deffdname = 'PCODE1_EXT' )
+      ( fieldname = 'PCODE2_EXT'       rollname = 'AD_PST2XT'                  deffdname = 'PCODE2_EXT' )
+      ( fieldname = 'PCODE3_EXT'       rollname = 'AD_PST3XT'                  deffdname = 'PCODE3_EXT' )
+      ( fieldname = 'PO_BOX'           rollname = 'AD_POBX'                    deffdname = 'PO_BOX' )
+      ( fieldname = 'DONT_USE_P'       rollname = 'AD_NO_USEP'                 deffdname = 'DONT_USE_P' )
+      ( fieldname = 'PO_BOX_NUM'       rollname = 'AD_POBXNUM'                 deffdname = 'PO_W_O_NO' )
+      ( fieldname = 'PO_BOX_LOC'       rollname = 'AD_POBXLOC'                 deffdname = 'PO_BOX_CIT' )
+      ( fieldname = 'CITY_CODE2'       rollname = 'AD_CIT2NUM'                 deffdname = 'PBOXCIT_NO' )
+      ( fieldname = 'PO_BOX_REG'       rollname = 'AD_POBXREG'                 deffdname = 'PO_BOX_REG' )
+      ( fieldname = 'PO_BOX_CTY'       rollname = 'AD_POBXCTY'                 deffdname = 'POBOX_CTRY' )
+      ( fieldname = 'POSTALAREA'       rollname = 'AD_PSTLAR'                  deffdname = 'DELIV_DIS' )
+      ( fieldname = 'TRANSPZONE'       rollname = 'LZONE'                      deffdname = 'TRANSPZONE' )
+      ( fieldname = 'STREET'           rollname = 'AD_STREET'                  deffdname = 'STREET' )
+      ( fieldname = 'DONT_USE_S'       rollname = 'AD_NO_USES'                 deffdname = 'DONT_USE_S' )
+      ( fieldname = 'STREETCODE'       rollname = 'AD_STRNUM'                  deffdname = 'STREET_NO' )
+      ( fieldname = 'STREETABBR'       rollname = 'AD_STRABBR'                 deffdname = 'STR_ABBR' )
+      ( fieldname = 'HOUSE_NUM1'       rollname = 'AD_HSNM1'                   deffdname = 'HOUSE_NO' )
+      ( fieldname = 'HOUSE_NUM2'       rollname = 'AD_HSNM2'                   deffdname = 'HOUSE_NO2' )
+      ( fieldname = 'HOUSE_NUM3'       rollname = 'AD_HSNM3'                   deffdname = 'HOUSE_NO3' )
+      ( fieldname = 'STR_SUPPL1'       rollname = 'AD_STRSPP1'                 deffdname = 'STR_SUPPL1' )
+      ( fieldname = 'STR_SUPPL2'       rollname = 'AD_STRSPP2'                 deffdname = 'STR_SUPPL2' )
+      ( fieldname = 'STR_SUPPL3'       rollname = 'AD_STRSPP3'                 deffdname = 'STR_SUPPL3' )
+      ( fieldname = 'LOCATION'         rollname = 'AD_LCTN'                    deffdname = 'LOCATION' )
+      ( fieldname = 'BUILDING'         rollname = 'AD_BLDNG'                   deffdname = 'BUILDING' )
+      ( fieldname = 'FLOOR'            rollname = 'AD_FLOOR'                   deffdname = 'FLOOR' )
+      ( fieldname = 'ROOMNUMBER'       rollname = 'AD_ROOMNUM'                 deffdname = 'ROOM_NO' )
+      ( fieldname = 'COUNTRY'          rollname = 'LAND1'                      deffdname = 'COUNTRY' )
+      ( fieldname = 'LANGU'            rollname = 'SPRAS'                      deffdname = 'LANGU' )
+      ( fieldname = 'REGION'           rollname = 'REGIO'                      deffdname = 'REGION' )
+      ( fieldname = 'SORT_1'           rollname = 'AD_SORT1UL'                 deffdname = 'SORT1' )
+      ( fieldname = 'SORT_2'           rollname = 'AD_SORT2UL'                 deffdname = 'SORT2' )
+      ( fieldname = 'SORT_PHN'         rollname = 'AD_SRTPHN'                  deffdname = 'SORT_PHN' )
+      ( fieldname = 'ADDRORIGIN'       rollname = 'AD_ORIGINA'                 deffdname = 'ADDRORIGIN' )
+      ( fieldname = 'EXTENSION1'       rollname = 'AD_EXTENS1'                 deffdname = 'EXTENS_1' )
+      ( fieldname = 'EXTENSION2'       rollname = 'AD_EXTENS2'                 deffdname = 'EXTENS_2' )
+      ( fieldname = 'TIME_ZONE'        rollname = 'AD_TZONE'                   deffdname = 'TIME_ZONE' )
+      ( fieldname = 'TAXJURCODE'       rollname = 'AD_TXJCD'                   deffdname = 'TAXJURCODE' )
+      ( fieldname = 'ADDRESS_ID'       rollname = 'AD_ADDR_ID'                 deffdname = 'ADDRESS_ID' )
+      ( fieldname = 'REMARK'           rollname = 'AD_REMARK1'                 deffdname = 'ADR_NOTES' )
+      ( fieldname = 'LANGU_CREA'       rollname = 'AD_LANGUCR'                 deffdname = 'LANGU_CR' )
+      ( fieldname = 'PO_BOX_LOBBY'     rollname = 'AD_PO_BOX_LBY'              deffdname = 'AD_PO_BOX_LBY' )
+      ( fieldname = 'DELI_SERV_TYPE'   rollname = 'AD_DELIVERY_SERVICE_TYPE'   deffdname = '' )
+      ( fieldname = 'DELI_SERV_NUMBER' rollname = 'AD_DELIVERY_SERVICE_NUMBER' deffdname = '' )
+      ( fieldname = 'COUNTY_CODE'      rollname = 'AD_CNTYNUM'                 deffdname = '' )
+      ( fieldname = 'COUNTY'           rollname = 'AD_COUNTY'                  deffdname = '' )
+      ( fieldname = 'TOWNSHIP_CODE'    rollname = 'AD_TWSHPNUM'                deffdname = '' )
+      ( fieldname = 'TOWNSHIP'         rollname = 'AD_TOWNSHIP'                deffdname = '' )
+      ( fieldname = 'DEFLT_COMM'       rollname = 'AD_COMM'                    deffdname = 'COMM_TYPE' )
+      ( fieldname = 'XPCPT'            rollname = 'AD_XPCPT'                   deffdname = 'BUSINESS PURPOSE COMPLETE FLAG' )
+      ( fieldname = 'TEL_NUMBER'       rollname = 'AD_TLNMBR1'                 deffdname = 'TEL1_NUMBR' )
+      ( fieldname = 'TEL_EXTENS'       rollname = 'AD_TLXTNS1'                 deffdname = 'TEL1_EXT' )
+      ( fieldname = 'FAX_NUMBER'       rollname = 'AD_FXNMBR1'                 deffdname = 'FAX_NUMBER' )
+      ( fieldname = 'FAX_EXTENS'       rollname = 'AD_FXXTNS1'                 deffdname = 'FAX_EXTENS' )
+      ( fieldname = 'ADDR_GROUP'       rollname = 'AD_GROUP'                   deffdname = 'ADDR_GROUP' )
+
+    ).
+    components_bapi_sorted = CORRESPONDING #( components_bapi ).
+  ENDMETHOD.
+
+
+  METHOD run.
+
+    TYPES: BEGIN OF ts_result,
+             name          TYPE c LENGTH 20,
+             time_unsorted TYPE i,
+             time_sorted   TYPE i,
+           END OF ts_result,
+           tt_results TYPE STANDARD TABLE OF ts_result.
+
+    DATA results TYPE tt_results.
+    DATA result TYPE ts_result.
+    DATA sorted TYPE abap_bool.
+
+    DO 10 TIMES.
+
+      DATA(variant) = sy-index.
+      GET RUN TIME FIELD DATA(start).
+      DO i_count TIMES.
+        CASE variant.
+          WHEN 1.
+            a1( ).
+            result-name = 'Try-Catch'.
+            sorted = abap_false.
+          WHEN 2.
+            a1s( ).
+            result-name = 'Try-Catch'.
+            sorted = abap_true.
+          WHEN 3.
+            a2( ).
+            result-name = 'LINE_EXISTS'.
+            sorted = abap_false.
+          WHEN 4.
+            a2s( ).
+            result-name = 'LINE_EXISTS'.
+            sorted = abap_true.
+          WHEN 5.
+            a3( ).
+            result-name = 'READ TABLE'.
+            sorted = abap_false.
+          WHEN 6.
+            a3s( ).
+            result-name = 'READ TABLE'.
+            sorted = abap_true.
+          WHEN 7.
+            a4( ).
+            result-name = 'VALUE OPTIONAL + IF'.
+            sorted = abap_false.
+          WHEN 8.
+            a4s( ).
+            result-name = 'VALUE OPTIONAL + IF'.
+            sorted = abap_true.
+          WHEN 9.
+            a5( ).
+            result-name = 'VALUE LINE EXISTS'.
+            sorted = abap_false.
+          WHEN 10.
+            a5s( ).
+            result-name = 'VALUE LINE EXISTS'.
+            sorted = abap_true.
+        ENDCASE.
+      ENDDO.
+
+      GET RUN TIME FIELD DATA(stopp).
+
+      DATA(diff) = stopp - start.
+
+      IF line_exists( results[ name = result-name ] ).
+        IF sorted = abap_true.
+          results[ name = result-name ]-time_sorted = diff.
+        ELSE.
+          results[ name = result-name ]-time_unsorted = diff.
+        ENDIF.
+      ELSE.
+        APPEND VALUE #(
+          name          = result-name
+          time_sorted   = SWITCH #( sorted WHEN abap_true THEN diff )
+          time_unsorted = SWITCH #( sorted WHEN abap_false THEN diff )
+          ) TO results.
+      ENDIF.
+
+    ENDDO.
+
+    LOOP AT results INTO result.
+      DATA(percent) = result-time_sorted * 100 / result-time_unsorted.
+      WRITE: / result-name, result-time_unsorted, result-time_sorted, percent NO-GAP, '%'.
+    ENDLOOP.
+  ENDMETHOD.
+
+
+  METHOD a1.
+
+    LOOP AT components_int INTO DATA(component_int).
+      CLEAR field.
+      field-int = component_int-fieldname.
+
+      TRY.
+          field-bapi = components_bapi[ fieldname = component_int-fieldname ]-fieldname.
+          field-origin = c_origin_fields_equal.
+        CATCH cx_sy_itab_line_not_found.
+          TRY.
+              field-bapi = components_bapi[ fieldname = component_int-deffdname ]-fieldname.
+              field-origin = c_origin_default_component.
+            CATCH cx_sy_itab_line_not_found.
+              TRY.
+                  field-bapi = components_bapi[ rollname = component_int-rollname ]-fieldname.
+                  field-origin = c_origin_rollname_equal.
+                CATCH cx_sy_itab_line_not_found.
+                  CONTINUE.
+                  field-origin = c_origin_no_match.
+              ENDTRY.
+          ENDTRY.
+      ENDTRY.
+      APPEND field TO fields.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD a1s.
+
+    LOOP AT components_int INTO DATA(component_int).
+      CLEAR field.
+      field-int = component_int-fieldname.
+
+      TRY.
+          field-bapi = components_bapi_sorted[ fieldname = component_int-fieldname ]-fieldname.
+          field-origin = c_origin_fields_equal.
+        CATCH cx_sy_itab_line_not_found.
+          TRY.
+              field-bapi = components_bapi_sorted[ fieldname = component_int-deffdname ]-fieldname.
+              field-origin = c_origin_default_component.
+            CATCH cx_sy_itab_line_not_found.
+              TRY.
+                  field-bapi = components_bapi_sorted[ rollname = component_int-rollname ]-fieldname.
+                  field-origin = c_origin_rollname_equal.
+                CATCH cx_sy_itab_line_not_found.
+                  CONTINUE.
+                  field-origin = c_origin_no_match.
+              ENDTRY.
+          ENDTRY.
+      ENDTRY.
+      APPEND field TO fields.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD a2.
+
+    LOOP AT components_int INTO DATA(component_int).
+      CLEAR field.
+      field-int = component_int-fieldname.
+
+
+      IF line_exists( components_bapi[ fieldname = component_int-fieldname ] ).
+        field-bapi = components_bapi[ fieldname = component_int-fieldname ]-fieldname.
+        field-origin = c_origin_fields_equal.
+      ELSEIF line_exists( components_bapi[ fieldname = component_int-deffdname ] ).
+        field-bapi = components_bapi[ fieldname = component_int-deffdname ]-fieldname.
+        field-origin = c_origin_default_component.
+      ELSEIF line_exists( components_bapi[ rollname = component_int-rollname ] ).
+        field-bapi = components_bapi[ rollname = component_int-rollname ]-fieldname.
+        field-origin = c_origin_rollname_equal.
+      ELSE.
+        CONTINUE.
+        field-origin = c_origin_no_match.
+      ENDIF.
+      APPEND field TO fields.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD a2s.
+
+    LOOP AT components_int INTO DATA(component_int).
+      CLEAR field.
+      field-int = component_int-fieldname.
+
+
+      IF line_exists( components_bapi_sorted[ fieldname = component_int-fieldname ] ).
+        field-bapi = components_bapi[ fieldname = component_int-fieldname ]-fieldname.
+        field-origin = c_origin_fields_equal.
+      ELSEIF line_exists( components_bapi_sorted[ fieldname = component_int-deffdname ] ).
+        field-bapi = components_bapi[ fieldname = component_int-deffdname ]-fieldname.
+        field-origin = c_origin_default_component.
+      ELSEIF line_exists( components_bapi_sorted[ rollname = component_int-rollname ] ).
+        field-bapi = components_bapi[ rollname = component_int-rollname ]-fieldname.
+        field-origin = c_origin_rollname_equal.
+      ELSE.
+        CONTINUE.
+        field-origin = c_origin_no_match.
+      ENDIF.
+      APPEND field TO fields.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD a3.
+
+    LOOP AT components_int INTO DATA(component_int).
+      CLEAR field.
+      field-int = component_int-fieldname.
+
+      READ TABLE components_bapi INTO DATA(component_bapi) WITH KEY fieldname = component_int-fieldname.
+      IF sy-subrc = 0.
+        field-bapi = component_bapi-fieldname.
+        field-origin = c_origin_fields_equal.
+      ELSE.
+        READ TABLE components_bapi INTO component_bapi WITH KEY fieldname = component_int-deffdname.
+        IF sy-subrc = 0.
+          field-bapi = component_bapi-fieldname.
+          field-origin = c_origin_default_component.
+        ELSE.
+          READ TABLE components_bapi INTO component_bapi WITH KEY rollname = component_int-rollname.
+          IF sy-subrc = 0.
+            field-bapi = component_bapi-fieldname.
+            field-origin = c_origin_rollname_equal.
+          ELSE.
+            CONTINUE.
+            field-origin = c_origin_no_match.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+      APPEND field TO fields.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD a3s.
+
+    LOOP AT components_int INTO DATA(component_int).
+      CLEAR field.
+      field-int = component_int-fieldname.
+
+      READ TABLE components_bapi_sorted INTO DATA(component_bapi) WITH KEY fieldname = component_int-fieldname.
+      IF sy-subrc = 0.
+        field-bapi = component_bapi-fieldname.
+        field-origin = c_origin_fields_equal.
+      ELSE.
+        READ TABLE components_bapi_sorted INTO component_bapi WITH KEY fieldname = component_int-deffdname.
+        IF sy-subrc = 0.
+          field-bapi = component_bapi-fieldname.
+          field-origin = c_origin_default_component.
+        ELSE.
+          READ TABLE components_bapi_sorted INTO component_bapi WITH KEY rollname = component_int-rollname.
+          IF sy-subrc = 0.
+            field-bapi = component_bapi-fieldname.
+            field-origin = c_origin_rollname_equal.
+          ELSE.
+            field-origin = c_origin_no_match.
+            CONTINUE.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+      APPEND field TO fields.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD a4.
+
+    LOOP AT components_int INTO DATA(component_int).
+      CLEAR field.
+      field-int = component_int-fieldname.
+
+      field-bapi = VALUE #( components_bapi[ fieldname = component_int-fieldname ]-fieldname OPTIONAL ).
+      field-origin = c_origin_fields_equal.
+      IF field-bapi IS INITIAL.
+        field-bapi = VALUE #( components_bapi[ fieldname = component_int-deffdname ]-fieldname OPTIONAL ).
+        field-origin = c_origin_default_component.
+        IF field-bapi IS INITIAL.
+          field-bapi = VALUE #( components_bapi[ rollname = component_int-rollname ]-fieldname OPTIONAL ).
+          field-origin = c_origin_rollname_equal.
+          IF field-bapi IS INITIAL.
+            CONTINUE.
+            field-origin = c_origin_no_match.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+      APPEND field TO fields.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD a4s.
+
+    LOOP AT components_int INTO DATA(component_int).
+      CLEAR field.
+      field-int = component_int-fieldname.
+
+      field-bapi = VALUE #( components_bapi_sorted[ fieldname = component_int-fieldname ]-fieldname OPTIONAL ).
+      field-origin = c_origin_fields_equal.
+      IF field-bapi IS INITIAL.
+        field-bapi = VALUE #( components_bapi_sorted[ fieldname = component_int-deffdname ]-fieldname OPTIONAL ).
+        field-origin = c_origin_default_component.
+        IF field-bapi IS INITIAL.
+          field-bapi = VALUE #( components_bapi_sorted[ rollname = component_int-rollname ]-fieldname OPTIONAL ).
+          field-origin = c_origin_rollname_equal.
+          IF field-bapi IS INITIAL.
+            field-origin = c_origin_no_match.
+            CONTINUE.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+      APPEND field TO fields.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD a5.
+
+    LOOP AT components_int INTO DATA(component_int).
+      CLEAR field.
+      field = COND #(
+                WHEN line_exists( components_bapi[ fieldname = component_int-fieldname ] )
+                THEN VALUE #( bapi   = components_bapi[ fieldname = component_int-fieldname ]-fieldname
+                              origin = c_origin_fields_equal
+                              int    = component_int-fieldname )
+                WHEN line_exists( components_bapi[ fieldname = component_int-deffdname ] )
+                THEN VALUE #( bapi   = components_bapi[ fieldname = component_int-deffdname ]-fieldname
+                              origin = c_origin_default_component
+                              int    = component_int-fieldname )
+                WHEN line_exists( components_bapi[ rollname = component_int-rollname ] )
+                THEN VALUE #( bapi = components_bapi[ rollname = component_int-rollname ]-fieldname
+                              origin = c_origin_rollname_equal
+                              int    = component_int-fieldname )
+                ELSE VALUE #( bapi   = space
+                              origin = c_origin_no_match
+                              int    = component_int-fieldname )
+                      ).
+      CHECK field-origin <> c_origin_no_match.
+      APPEND field TO fields.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD a5s.
+
+    LOOP AT components_int INTO DATA(component_int).
+      field = COND #(
+                WHEN line_exists( components_bapi_sorted[ fieldname = component_int-fieldname ] )
+                THEN VALUE #( bapi   = components_bapi_sorted[ fieldname = component_int-fieldname ]-fieldname
+                              origin = c_origin_fields_equal
+                              int    = component_int-fieldname )
+                WHEN line_exists( components_bapi_sorted[ fieldname = component_int-deffdname ] )
+                THEN VALUE #( bapi   = components_bapi_sorted[ fieldname = component_int-deffdname ]-fieldname
+                              origin = c_origin_default_component
+                              int    = component_int-fieldname )
+                WHEN line_exists( components_bapi_sorted[ rollname = component_int-rollname ] )
+                THEN VALUE #( bapi = components_bapi_sorted[ rollname = component_int-rollname ]-fieldname
+                              origin = c_origin_rollname_equal
+                              int    = component_int-fieldname )
+                ELSE VALUE #( bapi   = space
+                              origin = c_origin_no_match
+                              int    = component_int-fieldname )
+                      ).
+
+      CHECK field-origin <> c_origin_no_match.
+      APPEND field TO fields.
+    ENDLOOP.
+
+  ENDMETHOD.
+ENDCLASS.
+
+
+CLASS tests DEFINITION FOR TESTING DURATION SHORT RISK LEVEL HARMLESS.
+  PRIVATE SECTION.
+    DATA cut TYPE REF TO nested_reads.
+    DATA expected_results TYPE nested_reads=>tt_fields.
+
+    METHODS setup.
+    METHODS a1 FOR TESTING.
+    METHODS a1s FOR TESTING.
+    METHODS a2 FOR TESTING.
+    METHODS a2s FOR TESTING.
+    METHODS a3 FOR TESTING.
+    METHODS a3s FOR TESTING.
+    METHODS a4 FOR TESTING.
+    METHODS a4s FOR TESTING.
+    METHODS a5 FOR TESTING.
+    METHODS a5s FOR TESTING.
+ENDCLASS.
+
+CLASS tests IMPLEMENTATION.
+  METHOD setup.
+    cut = NEW #( ).
+    expected_results = cut->a1( ).
+  ENDMETHOD.
+
+  METHOD a1.
+    cl_aunit_assert=>assert_equals(
+        exp                  = expected_results
+        act                  = cut->a1( ) ).
+  ENDMETHOD.
+
+  METHOD a1s.
+    cl_aunit_assert=>assert_equals(
+        exp                  = expected_results
+        act                  = cut->a1s( ) ).
+  ENDMETHOD.
+
+  METHOD a2.
+    cl_aunit_assert=>assert_equals(
+        exp                  = expected_results
+        act                  = cut->a2( ) ).
+  ENDMETHOD.
+
+  METHOD a2s.
+    cl_aunit_assert=>assert_equals(
+        exp                  = expected_results
+        act                  = cut->a2s( ) ).
+  ENDMETHOD.
+
+  METHOD a3.
+    cl_aunit_assert=>assert_equals(
+        exp                  = expected_results
+        act                  = cut->a3( ) ).
+  ENDMETHOD.
+
+  METHOD a3s.
+    cl_aunit_assert=>assert_equals(
+        exp                  = expected_results
+        act                  = cut->a3s( ) ).
+  ENDMETHOD.
+
+  METHOD a4.
+    cl_aunit_assert=>assert_equals(
+        exp                  = expected_results
+        act                  = cut->a4( ) ).
+  ENDMETHOD.
+
+  METHOD a4s.
+    cl_aunit_assert=>assert_equals(
+        exp                  = expected_results
+        act                  = cut->a4s( ) ).
+  ENDMETHOD.
+
+  METHOD a5.
+    cl_aunit_assert=>assert_equals(
+        exp                  = expected_results
+        act                  = cut->a5( ) ).
+  ENDMETHOD.
+
+  METHOD a5s.
+    cl_aunit_assert=>assert_equals(
+        exp                  = expected_results
+        act                  = cut->a5s( ) ).
+  ENDMETHOD.
+
+ENDCLASS.
+
+START-OF-SELECTION.
+  NEW nested_reads( )->run( p_count ).
